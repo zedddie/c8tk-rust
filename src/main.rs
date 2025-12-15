@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use sdl2;
 
 const MEM_SIZE: usize = 4096;
@@ -65,6 +67,45 @@ fn opcode_str(op: u16) -> String {
         0x5000 => format!("SE V{}, V{}", vx, vy),
         0x6000 => format!("LD V{}, 0x{:02X}", vx, kk),
         0x7000 => format!("ADD V{}, 0x{:02X}", vx, kk),
+        0x8000 => match n {
+            0x0 => format!("LD V{}, V{}", vx, vy),
+            0x1 => format!("OR  V{}, V{}", vx, vy),
+            0x2 => format!("AND V{}, V{}", vx, vy),
+            0x3 => format!("XOR V{}, V{}", vx, vy),
+            0x4 => format!("ADD V{}, V{}", vx, vy),
+            0x5 => format!("SUB V{}, V{}", vx, vy),
+            0x6 => format!("SHR V{}", vx),
+            0x7 => format!("SUBN V{}, V{}", vx, vy),
+            0xE => format!("SHL V{}", vx),
+            _ => format!("8XY{} ??", n),
+        },
+        0x9000 => format!("SNE V{}, V{}", vx, vy),
+        0xA000 => format!("LD I, 0x{:03X}", nnn),
+        0xB000 => format!("JP V0, 0x{:03X}", nnn),
+        0xC000 => format!("RND V{}, 0x{:02X}", vx, kk),
+        0xD000 => format!("DRW V{}, V{}, {}", vx, vy, n),
+        0xE000 => {
+            if kk == 0x9E {
+                format!("SKP V{}", vx)
+            } else if kk == 0xA1 {
+                format!("SKNP V{}", vx)
+            } else {
+                format!("EX{} ??", kk)
+            }
+        }
+        0xF000 => match kk {
+            0x07 => format!("LD V{}, DT", vx),
+            0x0A => format!("LD V{}, K", vx),
+            0x15 => format!("LD DT, V{}", vx),
+            0x18 => format!("LD ST, V{}", vx),
+            0x1E => format!("ADD I, V{}", vx),
+            0x29 => format!("LD F, V{}", vx),
+            0x33 => format!("LD BCD, V{}", vx),
+            0x55 => format!("LD [I], V{}", vx),
+            0x65 => format!("LD V{}, [I]", vx),
+            _ => format!("FX{:02X} ??", kk),
+        },
+        _ => format!("0x{:04X} ??", op),
     }
 }
 
