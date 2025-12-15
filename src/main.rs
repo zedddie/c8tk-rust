@@ -1,18 +1,18 @@
-use std::fmt::format;
-
 use sdl2;
+use std::fs::File;
+use std::io::Read;
 
 const MEM_SIZE: usize = 4096;
 const DISP_W: usize = 64;
 const DISP_H: usize = 32;
 const SCALE: usize = 10;
-const WIN_W: usize = DISP_W * SCALE;
-const WIN_H: usize = DISP_H * SCALE;
+const WIN_W: u32 = (DISP_W * SCALE) as u32;
+const WIN_H: u32 = (DISP_H * SCALE) as u32;
 const FPS: usize = 60;
 const CYCLES: usize = 700 / FPS;
 
 pub struct Chip8 {
-    pub mem: [u8; MEM_SIZE],
+    pub mem: [u8; MEM_SIZE as usize],
     pub disp: [u8; DISP_W * DISP_H],
     pub v: [u8; 16],
     pub i: u16,
@@ -109,4 +109,67 @@ fn opcode_str(op: u16) -> String {
     }
 }
 
+impl Chip8 {
+    pub fn new(debug: bool) -> Result<Self, String> {
+        let mut c = Chip8 {
+            mem: [0; MEM_SIZE as usize],
+            disp: [0_u8; DISP_W * DISP_H],
+            v: [0; 16],
+            i: 0,
+            pc: 0x200,
+            stack: [0; 16],
+            sp: 0,
+            keys: [false; 16],
+            delay: 0,
+            sound: 0,
+            sound_active: false,
+            window: unsafe { std::mem::zeroed() },
+            canvas: unsafe { std::mem::zeroed() },
+            last_cycle_time: 0,
+            debug,
+        };
+        c.mem[0..FONT.len()].copy_from_slice(&FONT);
+        let sdl_init = sdl2::init()?;
+        let video_subsystem = sdl_init.video()?;
+
+        let window = video_subsystem
+            .window("CHIP8", WIN_W, WIN_H)
+            .position_centered()
+            .build()
+            .map_err(|e| e.to_string())?;
+
+        let mut canvas = window
+            .into_canvas()
+            .accelerated()
+            .build()
+            .map_err(|e| e.to_string())?;
+
+        canvas
+            .set_logical_size(DISP_W as u32, DISP_H as u32)
+            .map_err(|e| e.to_string())?;
+
+        c.window = canvas.window_mut().to_owned();
+        c.canvas = canvas;
+        Ok(c)
+    }
+    pub fn load(&mut self, path: &str) -> Result<(), String> {
+        let mut f = File::open(path).map_err(|e| format!("failed to open rom:{e}"))?;
+        let metadata = f.metadata().map_err(|e| e.to_string())?;
+        let sz = metadata.len() as usize;
+
+        const PROGRAM_START: usize = 0x200;
+        let max_size = MEM_SIZE - PROGRAM_START;
+
+        if sz > max_size {
+            return Err(format!(
+                "ROM size ({}) exceed maximum allowed size ({})",
+                sz, max_size,
+            ));
+        }
+        f.read_exact(&mut self.mem[PROGRAM_START..PROGRAM_START + sz])
+            .map_err(|e| format!("failed to read ROM dataa:{e}"))?;
+
+        Ok(())
+    }
+}
 fn main() {}
