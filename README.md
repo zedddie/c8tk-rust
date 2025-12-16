@@ -1,5 +1,5 @@
 (ch8vm is ported, ch8asm is not.)
-i ported (this repo)[https://codeberg.org/qedme/c8tk]} of my frientd as he asked for it :P
+i ported [this repo](https://codeberg.org/qedme/c8tk)} of my frientd as he asked for it :P
 ## Usage
 
 
